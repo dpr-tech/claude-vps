@@ -1,0 +1,15 @@
+[Unit]
+Description=CloudCLI Web Panel
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+WorkingDirectory={{HOME}}
+Environment=HOME={{HOME}}
+ExecStart={{CLOUDCLI_BIN}}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

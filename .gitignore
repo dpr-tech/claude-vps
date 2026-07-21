@@ -1,0 +1,5 @@
+.env
+*.key
+*secret*
+*.pem
+id_ed25519*
