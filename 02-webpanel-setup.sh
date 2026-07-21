@@ -103,7 +103,7 @@ if [[ "$PW_AUTH" != *"no"* || "$ROOT_LOGIN" != *"no"* ]]; then
   if [[ "$HARDEN_NOW" == "yes" ]]; then
     sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
     sudo sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-    sudo systemctl restart sshd
+    sudo systemctl restart ssh 2>/dev/null || sudo systemctl restart sshd
     echo "Готово."
   else
     echo "Пропущено — не забудьте сделать это вручную позже."

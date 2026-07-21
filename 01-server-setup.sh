@@ -64,7 +64,16 @@ echo
 echo "    ssh $NEW_USER@$SERVER_IP"
 echo "    sudo whoami   # должно вывести: root"
 echo
-read -rp "Подтвердите, что вход под $NEW_USER по SSH-ключу сработал (yes/no): " CONFIRM
+echo "Ключ на новом пользователе — тот же, что уже работает у вас для root"
+echo "(мы скопировали именно его), поэтому SSH должен подключиться без"
+echo "дополнительных флагов, теми же учётными данными, что вы используете"
+echo "сейчас. Если подключение не пройдёт автоматически — укажите путь"
+echo "к ключу явно: ssh -i ~/.ssh/id_ed25519 $NEW_USER@$SERVER_IP"
+echo "(или ~/.ssh/id_rsa, если генерировали ключ другого типа)."
+echo "Пароль по паролю тоже пока работает (мы его ещё не отключили) —"
+echo "можно войти паролем, который вы задали командой adduser выше."
+echo
+read -rp "Подтвердите, что вход под $NEW_USER сработал (yes/no): " CONFIRM
 if [[ "$CONFIRM" != "yes" ]]; then
   echo "Остановлено. Разберитесь со входом под $NEW_USER, прежде чем продолжать — SSH-хардненинг ещё не применялся, доступ по root и паролю пока не тронут." >&2
   exit 1
@@ -75,7 +84,7 @@ CURRENT_STEP="Шаг 3/6: SSH-хардненинг"
 SSHD_CONFIG="/etc/ssh/sshd_config"
 sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' "$SSHD_CONFIG"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' "$SSHD_CONFIG"
-systemctl restart sshd
+systemctl restart ssh 2>/dev/null || systemctl restart sshd
 echo "Вход по паролю и прямой root-логин отключены."
 
 echo "=== Шаг 4/6: fail2ban ==="
