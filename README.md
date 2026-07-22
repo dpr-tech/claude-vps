@@ -46,14 +46,61 @@ cd ~/claude-vps
 
    **VPN всё равно нужен на этот шаг** — сама страница авторизации Anthropic по-прежнему недоступна с российского IP, кликабельность решает только проблему копирования, а не блокировку по геолокации: включите VPN на минуту, пройдите авторизацию, скопируйте код, выключите VPN, вставьте код обратно в веб-терминал.
 
+### Шаг 4 — Telegram-бот (опционально)
+
+Telegram-бот как быстрый интерфейс к Claude Code на том же VPS — вопросы, файлы и картинки прямо из чата, без захода по SSH. Полные бизнес-требования — в `telegram-bot-requirements.md`.
+
+Подготовить заранее:
+
+1. **Токен бота** — в Telegram написать [@BotFather](https://t.me/BotFather), `/newbot`, дать имя. Можно создать и позже — скрипт спросит и разрешит оставить пустым.
+2. **Свой Telegram user ID** — написать [@userinfobot](https://t.me/userinfobot), он пришлёт ID в ответ. Это единственный пользователь, кому бот будет отвечать — остальным он молчит.
+
+Запуск (под тем же пользователем, что и шаг 2, на сервере, где уже стоит `claude`):
+
+```bash
+cd ~/claude-vps
+./03-telegram-bot-setup.sh
+```
+
+Скрипт создаст изолированную директорию для данных бота (`~/telegram-bot-data` — отдельно от `~/.ssh` и прочих конфигов), спросит токен и user ID, поставит зависимости (`TelegramBot/`, Node.js), включит systemd-службу `telegram-bot` и systemd-таймер `telegram-bot-cleanup` (ежедневная чистка временных файлов).
+
+Что делает бот:
+- текст → `claude -p` → ответ в чат; файлы и картинки принимает, сохраняет в изолированную папку и передаёт путь Claude Code для анализа
+- сессия продолжается между сообщениями, `/new` сбрасывает контекст
+- инструменты Claude Code внутри сессий бота ограничены чтением (`Read`, `Grep`, `Glob`) + веб-поиском — Bash и запись файлов недоступны
+
+Если токен или user ID не заполнили сразу — впишите их в `TelegramBot/.env` и запустите `sudo systemctl enable --now telegram-bot`.
+
+Поменять порог свободного места (по умолчанию 1 ГБ) или срок хранения временных файлов (по умолчанию 72 часа) — отредактировать `MIN_FREE_SPACE_MB` / `TEMP_FILE_TTL_HOURS` в `TelegramBot/.env` и перезапустить службу: `sudo systemctl restart telegram-bot`.
+
+Логи: `sudo journalctl -u telegram-bot -f` (сам бот) и `sudo journalctl -u telegram-bot-cleanup -f` (очистка).
+
 ## Структура репозитория
 
 ```
 claude-vps/
 ├── 01-server-setup.sh
 ├── 02-webpanel-setup.sh
+├── 03-telegram-bot-setup.sh
 ├── Caddyfile.template
 ├── cloudcli.service.template
+├── telegram-bot.service.template
+├── telegram-bot-cleanup.service.template
+├── telegram-bot-cleanup.timer.template
+├── telegram-bot-requirements.md
+├── TelegramBot/
+│   ├── bot.js
+│   ├── cleanup.js
+│   ├── config.js
+│   ├── CLAUDE.md
+│   ├── package.json
+│   ├── .env.example
+│   ├── .gitignore
+│   └── lib/
+│       ├── claude.js
+│       ├── diskspace.js
+│       ├── logger.js
+│       └── sessions.js
 ├── README.md
 └── .gitignore
 ```
@@ -63,6 +110,7 @@ claude-vps/
 - Данные аккаунта Anthropic (вводятся через браузер на шаге 3)
 - Логин и пароль веб-панели CloudCLI
 - Пароль нового пользователя на сервере
+- Токен Telegram-бота и разрешённый user ID (`TelegramBot/.env`, шаг 4)
 
 ## Восстановление на новом сервере
 
@@ -73,4 +121,5 @@ claude-vps/
 - Оба скрипта идемпотентны — повторный запуск не должен ничего сломать.
 - `01-server-setup.sh` требует root и явного подтверждения доступа перед отключением пароля/root-логина.
 - `02-webpanel-setup.sh` требует НЕ root (обычный пользователь с sudo) и наличия установленного `claude` (ставится в шаге 1); вход в аккаунт не обязателен на этом этапе.
+- `03-telegram-bot-setup.sh` тоже требует НЕ root. Данные бота (входящие файлы, сессии, лог) хранятся в отдельной от `~/.ssh`/конфигов директории `~/telegram-bot-data`. Внутри сессий бота Claude Code ограничен инструментами чтения — Bash и запись файлов недоступны, бот не может ничего менять или выполнять на сервере.
 - Секреты в репозиторий не попадают — только структура и логика установки.

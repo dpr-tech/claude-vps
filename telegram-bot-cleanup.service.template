@@ -1,0 +1,9 @@
+[Unit]
+Description=Claude Telegram Bot - очистка временных файлов
+
+[Service]
+Type=oneshot
+User={{USER}}
+WorkingDirectory={{BOT_DIR}}
+EnvironmentFile={{BOT_DIR}}/.env
+ExecStart={{NODE_BIN}} {{BOT_DIR}}/cleanup.js

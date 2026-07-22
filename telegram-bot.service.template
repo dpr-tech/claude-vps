@@ -1,0 +1,15 @@
+[Unit]
+Description=Claude Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+WorkingDirectory={{BOT_DIR}}
+EnvironmentFile={{BOT_DIR}}/.env
+ExecStart={{NODE_BIN}} {{BOT_DIR}}/bot.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
