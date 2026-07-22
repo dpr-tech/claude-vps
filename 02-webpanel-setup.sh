@@ -1,6 +1,6 @@
 #!/bin/bash
 # 02-webpanel-setup.sh
-# Запускать под обычным пользователем (не root) ПОСЛЕ ручного `claude login`.
+# Запускать под обычным пользователем (не root) ПОСЛЕ ручного `claude setup-token`.
 # Делает: CloudCLI -> systemd-служба -> Caddy (авто-HTTPS) -> ufw 80/443 -> проверка.
 
 set -euo pipefail
@@ -17,8 +17,8 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 if [[ ! -d "$HOME/.claude" ]]; then
-  echo "Не найдена папка ~/.claude — похоже, вы ещё не выполнили 'claude login'." >&2
-  echo "Запустите 'claude', авторизуйтесь, и только потом повторите этот скрипт." >&2
+  echo "Не найдена папка ~/.claude — похоже, вы ещё не выполнили 'claude setup-token'." >&2
+  echo "Запустите 'claude setup-token', авторизуйтесь, и только потом повторите этот скрипт." >&2
   exit 1
 fi
 

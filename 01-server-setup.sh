@@ -2,7 +2,7 @@
 # 01-server-setup.sh
 # Запускать под root на чистом Ubuntu 24.04.
 # Делает: новый пользователь -> SSH-хардненинг -> fail2ban -> базовый ufw -> Node.js -> Claude Code.
-# Останавливается перед `claude login` — это ручной шаг (см. README).
+# Останавливается перед `claude setup-token` — это ручной шаг (см. README).
 
 set -euo pipefail
 CURRENT_STEP="инициализация"
@@ -112,7 +112,8 @@ echo "============================================================"
 echo "Готово. Дальше — вручную:"
 echo "1. Зайдите на сервер под пользователем $NEW_USER (root по SSH больше недоступен):"
 echo "     ssh $NEW_USER@$SERVER_IP"
-echo "2. Выполните: claude"
-echo "   — выберите вход через Claude account, авторизуйтесь (см. README про VPN)."
-echo "3. После успешного логина запустите: ./scripts/02-webpanel-setup.sh"
+echo "2. Выполните: claude setup-token"
+echo "   — команда для headless-серверов, авторизуйтесь через подписку"
+echo "   (см. README про VPN и про аккуратное копирование длинной ссылки)."
+echo "3. После успешной авторизации запустите: ./scripts/02-webpanel-setup.sh"
 echo "============================================================"
