@@ -2,7 +2,7 @@
 # 01-server-setup.sh
 # Запускать под root на чистом Ubuntu 24.04.
 # Делает: новый пользователь -> SSH-хардненинг -> fail2ban -> базовый ufw -> Node.js -> Claude Code.
-# Останавливается перед `claude setup-token` — это ручной шаг (см. README).
+# Останавливается перед входом в Claude (`claude`) — это ручной шаг (см. README).
 
 set -euo pipefail
 CURRENT_STEP="инициализация"
@@ -102,18 +102,37 @@ echo "ufw включён, разрешён порт 22."
 
 echo "=== Шаг 6/6: Node.js 22 и Claude Code ==="
 CURRENT_STEP="Шаг 6/6: Node.js и Claude Code"
+
+# Node.js ставим системно (нужны права root для подключения репозитория NodeSource)
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
-npm install -g @anthropic-ai/claude-code
-echo "Установлено: $(claude --version 2>/dev/null || echo 'claude --version не сработал, проверьте вручную')"
+
+# Claude Code ставим НЕ через root/sudo, а в собственную npm-директорию
+# нового пользователя — иначе автообновление Claude Code упадёт с
+# "Auto-update failed: no write permission to npm prefix", так как
+# пакет окажется владельцем root, а работать с ним будет другой пользователь.
+NEW_USER_HOME="/home/$NEW_USER"
+sudo -u "$NEW_USER" HOME="$NEW_USER_HOME" bash -c '
+  mkdir -p "$HOME/.npm-global"
+  npm config set prefix "$HOME/.npm-global"
+  if ! grep -qxF "export PATH=\$HOME/.npm-global/bin:\$PATH" "$HOME/.bashrc" 2>/dev/null; then
+    echo "export PATH=\$HOME/.npm-global/bin:\$PATH" >> "$HOME/.bashrc"
+  fi
+  export PATH="$HOME/.npm-global/bin:$PATH"
+  npm install -g @anthropic-ai/claude-code
+'
+CLAUDE_VERSION="$(sudo -u "$NEW_USER" HOME="$NEW_USER_HOME" bash -lc 'claude --version' 2>/dev/null || echo 'не удалось проверить — проверьте вручную после входа под пользователем')"
+echo "Установлено: $CLAUDE_VERSION"
 
 echo
 echo "============================================================"
 echo "Готово. Дальше — вручную:"
 echo "1. Зайдите на сервер под пользователем $NEW_USER (root по SSH больше недоступен):"
 echo "     ssh $NEW_USER@$SERVER_IP"
-echo "2. Выполните: claude setup-token"
-echo "   — команда для headless-серверов, авторизуйтесь через подписку"
-echo "   (см. README про VPN и про аккуратное копирование длинной ссылки)."
-echo "3. После успешной авторизации запустите: ./scripts/02-webpanel-setup.sh"
+echo "2. Выполните: claude"
+echo "   Перед копированием ссылки авторизации расширьте терминал"
+echo "   (stty cols 1000 либо на весь экран + мелкий шрифт) — иначе"
+echo "   URL может перенестись на несколько строк и испортиться при"
+echo "   копировании. Выберите Claude account (см. README про VPN)."
+echo "3. После успешного входа запустите: ./scripts/02-webpanel-setup.sh"
 echo "============================================================"
