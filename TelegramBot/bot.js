@@ -49,7 +49,17 @@ function splitMessage(text) {
 
 async function replyLong(ctx, text) {
   for (const part of splitMessage(text)) {
-    await ctx.reply(part);
+    // Claude Code отвечает Markdown'ом (**жирный**, списки и т.п.) — пробуем
+    // отрендерить его в Telegram. Если разметка в конкретном куске битая
+    // (например разрезалась ровно посередине **жирного** на границе частей)
+    // и Telegram отказывается парсить — отправляем как обычный текст, чтобы
+    // сообщение всё равно дошло, а не терялось молча.
+    try {
+      await ctx.reply(part, { parse_mode: 'Markdown' });
+    } catch (err) {
+      log.warn(`Не удалось отправить с Markdown-разметкой, отправляю как обычный текст: ${err.message}`);
+      await ctx.reply(part);
+    }
   }
 }
 
