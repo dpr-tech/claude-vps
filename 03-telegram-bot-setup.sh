@@ -69,13 +69,14 @@ else
   echo "/newbot, дайте имя, получите токен. Можно оставить пустым и вписать в .env позже —"
   echo "тогда служба бота будет создана, но не запущена автоматически."
   read -rp "TELEGRAM_BOT_TOKEN [пусто, впишу позже]: " BOT_TOKEN
-  echo "Твой числовой Telegram user ID — единственный, кому бот будет отвечать."
-  echo "Узнать: написать @userinfobot в Telegram, он пришлёт ID в ответ."
-  read -rp "ALLOWED_USER_ID [пусто, впишу позже]: " ALLOWED_USER_ID
+  echo "Числовые Telegram user ID, кому бот будет отвечать — через запятую, без пробелов"
+  echo "(например 111111,222222). Остальным бот молчит. Узнать ID: написать @userinfobot"
+  echo "в Telegram, он пришлёт ID в ответ — попроси каждого, кому нужен доступ, сделать это."
+  read -rp "ALLOWED_USER_IDS [пусто, впишу позже]: " ALLOWED_USER_IDS
 
   cat > "$ENV_FILE" <<EOF
 TELEGRAM_BOT_TOKEN=$BOT_TOKEN
-ALLOWED_USER_ID=$ALLOWED_USER_ID
+ALLOWED_USER_IDS=$ALLOWED_USER_IDS
 CLAUDE_BIN=$(command -v claude)
 WORK_DIR=$WORK_DIR
 LOG_FILE=$WORK_DIR/bot.log
@@ -112,13 +113,13 @@ sudo systemctl enable --now telegram-bot-cleanup.timer
 echo "Таймер очистки временных файлов включён (раз в сутки, TTL из .env)."
 
 TOKEN_SET="$(grep -q '^TELEGRAM_BOT_TOKEN=.\+' "$ENV_FILE" && echo yes || echo no)"
-USERID_SET="$(grep -q '^ALLOWED_USER_ID=.\+' "$ENV_FILE" && echo yes || echo no)"
+USERID_SET="$(grep -q '^ALLOWED_USER_IDS=.\+' "$ENV_FILE" && echo yes || echo no)"
 
 if [[ "$TOKEN_SET" == "yes" && "$USERID_SET" == "yes" ]]; then
   sudo systemctl enable --now telegram-bot
   echo "Служба telegram-bot запущена."
 else
-  echo "TELEGRAM_BOT_TOKEN и/или ALLOWED_USER_ID пустые в $ENV_FILE — служба telegram-bot"
+  echo "TELEGRAM_BOT_TOKEN и/или ALLOWED_USER_IDS пустые в $ENV_FILE — служба telegram-bot"
   echo "создана, но НЕ запущена. Заполните .env и выполните:"
   echo "  sudo systemctl enable --now telegram-bot"
 fi

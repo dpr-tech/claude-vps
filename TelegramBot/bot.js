@@ -1,7 +1,8 @@
 // bot.js
 // Точка входа. Telegram-бот как интерфейс к Claude Code на VPS.
-// Единственный разрешённый пользователь — ALLOWED_USER_ID. Остальным бот
-// не отвечает вообще (см. telegram-bot-requirements.md).
+// Разрешённые пользователи — ALLOWED_USER_IDS. Остальным бот не отвечает
+// вообще (см. telegram-bot-requirements.md). Каждый разрешённый пользователь
+// получает свою собственную сессию/контекст (ключ — chat id).
 
 const fs = require('fs');
 const path = require('path');
@@ -21,10 +22,10 @@ fs.mkdirSync(config.incomingDir, { recursive: true });
 
 const bot = new Telegraf(config.telegramToken);
 
-// --- Доступ: отвечаем только владельцу, остальным — тишина ---
+// --- Доступ: отвечаем только из списка разрешённых, остальным — тишина ---
 bot.use(async (ctx, next) => {
   const userId = ctx.from && ctx.from.id;
-  if (userId !== config.allowedUserId) {
+  if (!config.allowedUserIds.includes(userId)) {
     if (userId) {
       log.warn(`Отклонён запрос от чужого user_id=${userId} (username=${ctx.from.username || '—'})`);
     }

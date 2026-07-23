@@ -23,9 +23,29 @@ function intFromEnv(name, defaultValue) {
   return Number.isFinite(parsed) ? parsed : defaultValue;
 }
 
+function parseAllowedUserIds() {
+  // ALLOWED_USER_IDS — новый формат, список через запятую ("111,222").
+  // ALLOWED_USER_ID — старый формат (один ID), поддерживаем для совместимости
+  // с уже развёрнутыми .env, чтобы обновление кода не роняло бота.
+  const raw = process.env.ALLOWED_USER_IDS || process.env.ALLOWED_USER_ID;
+  if (!raw) {
+    console.error('Не задана ни ALLOWED_USER_IDS, ни ALLOWED_USER_ID (см. .env.example)');
+    process.exit(1);
+  }
+  const ids = raw
+    .split(',')
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => Number.isFinite(n));
+  if (ids.length === 0) {
+    console.error(`ALLOWED_USER_IDS/ALLOWED_USER_ID не удалось разобрать: "${raw}"`);
+    process.exit(1);
+  }
+  return ids;
+}
+
 const config = {
   telegramToken: required('TELEGRAM_BOT_TOKEN'),
-  allowedUserId: parseInt(required('ALLOWED_USER_ID'), 10),
+  allowedUserIds: parseAllowedUserIds(),
   claudeBin: process.env.CLAUDE_BIN || 'claude',
   workDir: process.env.WORK_DIR || path.join(__dirname, 'data'),
   logFile: process.env.LOG_FILE || path.join(__dirname, 'data', 'bot.log'),
